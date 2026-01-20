@@ -1,0 +1,18 @@
+# Core UI & Dashboard
+streamlit>=1.30.0
+plotly>=5.18.0
+pillow>=10.1.0
+
+# Deep Learning (The Brain)
+tensorflow>=2.15.0
+keras>=2.15.0
+
+# Image Processing (The Vision)
+opencv-python-headless>=4.8.0
+numpy>=1.26.0
+matplotlib>=3.8.0
+
+# Data Science & Metrics 
+seaborn>=0.13.0
+pandas>=2.1.0
+scikit-learn>=1.3.0
