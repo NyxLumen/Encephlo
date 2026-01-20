@@ -8,7 +8,7 @@ Encephlo bridges the gap between complex Neural Networks and clinical utility. B
 
 ## 🛠️ Tech Stack
 
-- **AI Core:** TensorFlow / Keras (EfficientNetB0)
+- **AI Core:** TensorFlow / Keras (ResNet50)
 - **UI/UX:** Streamlit
 - **Interactivity:** Plotly & OpenCV
 - **Scientific Analysis:** Seaborn & Scikit-learn
@@ -21,5 +21,5 @@ Encephlo bridges the gap between complex Neural Networks and clinical utility. B
 
 ## 👥 The Team
 
-- **UI & Integration Lead:** [Your Name]
-- **AI & Data Lead:** [Partner Name]
+- **UI & Integration Lead:** Nyx Lumen
+- **AI & Data Lead:** Sid
