@@ -59,3 +59,5 @@ models/
 # ========================
 .DS_Store
 Thumbs.db
+
+kaggle.json
