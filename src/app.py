@@ -8,7 +8,11 @@ import os
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from utils import make_gradcam_heatmap, overlay_heatmap
+try:
+    from utils import make_gradcam_heatmap, overlay_heatmap
+except ImportError:
+    st.error("⚠️ Error: 'utils.py' not found. Please create it in the src folder.")
+    st.stop()
 
 st.set_page_config(
     page_title="Encephlo | AI Diagnostic",
@@ -38,8 +42,8 @@ def crop_brain_contour(image):
     else:
         gray = image_np
 
-    gray = cv2.GaussianBlur(gray, (5, 5), 0)
-    thresh = cv2.threshold(gray, 45, 255, cv2.THRESH_BINARY)[1]
+    blur = cv2.GaussianBlur(gray, (5, 5), 0)
+    _, thresh = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     
     thresh = cv2.erode(thresh, None, iterations=2)
     thresh = cv2.dilate(thresh, None, iterations=2)
@@ -52,24 +56,22 @@ def crop_brain_contour(image):
     c = max(contours, key=cv2.contourArea)
     x, y, w, h = cv2.boundingRect(c)
     
-    cropped = image_np[y:y+h, x:x+w]
+    cropped = gray[y:y+h, x:x+w]
+    
     return Image.fromarray(cropped)
 
 with st.sidebar:
     st.title("🧠 Encephlo")
-    st.write("### AI Diagnostic Suite")
+    st.caption("v1.0.2 (Otsu Corrected)")
     uploaded_file = st.file_uploader("Upload MRI Scan", type=["jpg", "png", "jpeg"])
-    
     st.divider()
-    st.info("**Model Classes:**\n1. Glioma\n2. Meningioma\n3. No Tumor\n4. Pituitary")
+    st.info("Classes:\n- Glioma\n- Meningioma\n- No Tumor\n- Pituitary")
 
 st.title("Neural Tumor Detection Interface")
 
 model = load_prediction_model()
-
 if model is None:
-    st.error("🚨 Model not found!")
-    st.write("Please ensure your model file is at: `Encephlo/models/model.h5`")
+    st.error("🚨 Model missing! Place 'model.h5' in the models folder.")
     st.stop()
 
 if uploaded_file is not None:
@@ -79,61 +81,47 @@ if uploaded_file is not None:
     
     with col1:
         st.header("Original Scan")
-        st.image(original_image, use_container_width=True, caption="Patient Input")
+        st.image(original_image, use_container_width=True)
 
     with col2:
         st.header("AI Analysis")
         
-        with st.spinner('Isolating Brain Region & Analyzing...'):
+        with st.spinner('Preprocessing & Scanning...'):
             cropped_image = crop_brain_contour(original_image)
             
-            with st.expander("Show AI Input (Preprocessed)"):
-                st.image(cropped_image, caption="Cropped Brain Region", width=150)
-            
             img_resized = cropped_image.resize((224, 224))
+            img_converted = img_resized.convert('RGB')
             
-            img_array = np.array(img_resized)
+            img_array = np.array(img_converted)
             img_array = img_array / 255.0
             img_batch = np.expand_dims(img_array, axis=0)
 
             predictions = model.predict(img_batch)
-            
             class_names = ['Glioma', 'Meningioma', 'No Tumor', 'Pituitary']
+            
             predicted_index = np.argmax(predictions)
-            predicted_label = class_names[predicted_index]
+            result = class_names[predicted_index]
             confidence = predictions[0][predicted_index] * 100
 
-            if predicted_label == "No Tumor":
-                st.success(f"DIAGNOSIS: {predicted_label}")
+            if result == "No Tumor":
+                st.success(f"DIAGNOSIS: {result}")
             else:
-                st.error(f"DIAGNOSIS: {predicted_label}")
+                st.error(f"DIAGNOSIS: {result}")
             
-            st.metric("Confidence Score", f"{confidence:.2f}%")
+            st.metric("Confidence", f"{confidence:.2f}%")
             
+            with st.expander("Debug Info"):
+                st.image(img_converted, caption="AI Input (What the model actually saw)", width=150)
+                st.write(f"Raw Probabilities: {predictions}")
+
             st.divider()
             st.subheader("Visual Explanation")
             try:
-                last_conv_layer = "conv5_block3_out" 
-                
-                heatmap = make_gradcam_heatmap(
-                    img_batch, 
-                    model, 
-                    last_conv_layer_name=last_conv_layer
-                )
-                
-                if heatmap is not None:
-                    final_overlay = overlay_heatmap(img_resized, heatmap)
-                    st.image(
-                        final_overlay, 
-                        caption="Grad-CAM Attention Map", 
-                        use_container_width=True
-                    )
-                else:
-                    st.warning("Heatmap generation returned None.")
-                    
+                heatmap = make_gradcam_heatmap(img_batch, model, "conv5_block3_out")
+                final_img = overlay_heatmap(img_converted, heatmap)
+                st.image(final_img, caption="Grad-CAM Attention Map", use_container_width=True)
             except Exception as e:
-                st.warning(f"Could not generate heatmap: {e}")
-                st.caption("Common Error: Check 'last_conv_layer' name in app.py")
+                st.warning(f"Heatmap Error: {e}")
 
 else:
-    st.info("Waiting for MRI Scan... Please upload a file.")
+    st.info("Waiting for MRI Scan...")
