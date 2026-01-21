@@ -2,6 +2,7 @@ import streamlit as st
 import tensorflow as tf
 import numpy as np
 from PIL import Image
+from report import create_pdf
 import cv2
 import sys
 import os
@@ -122,6 +123,35 @@ if uploaded_file is not None:
                 st.image(final_img, caption="Grad-CAM Attention Map", use_container_width=True)
             except Exception as e:
                 st.warning(f"Heatmap Error: {e}")
+            
+            st.divider()
+            st.subheader("📋 Clinical Report")
+            
+            if st.button("Generate PDF Report"):
+                with st.spinner("Compiling document..."):
+                    
+                    img_converted.save("temp_input.jpg")
+
+                    heatmap_path = None
+                    
+                    if 'final_img' in locals():
+                        Image.fromarray(final_img).save("temp_heatmap.jpg")
+                        heatmap_path = "temp_heatmap.jpg"
+                    
+                    pdf_bytes = create_pdf(result, confidence, "temp_input.jpg", heatmap_path)
+                    
+                    if os.path.exists("temp_input.jpg"):
+                        os.remove("temp_input.jpg")
+                    
+                    if heatmap_path and os.path.exists(heatmap_path):
+                        os.remove(heatmap_path)
+                    
+                    st.download_button(
+                        label="📥 Download Diagnosis.pdf",
+                        data=pdf_bytes,
+                        file_name="Encephlo_Report.pdf",
+                        mime="application/pdf"
+                    )
 
 else:
     st.info("Waiting for MRI Scan...")
