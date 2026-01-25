@@ -45,9 +45,12 @@ def overlay_heatmap(img, heatmap, alpha=0.4):
     heatmap = np.uint8(255 * heatmap)
     heatmap = cv2.resize(heatmap, (width, height))
 
-    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-
+    heatmap_bgr = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+    
+    heatmap_rgb = cv2.cvtColor(heatmap_bgr, cv2.COLOR_BGR2RGB)
+    
     img_array = np.array(img)
-    superimposed_img = heatmap * alpha + img_array
+    
+    superimposed_img = heatmap_rgb * alpha + img_array
     
     return np.clip(superimposed_img, 0, 255).astype('uint8')
