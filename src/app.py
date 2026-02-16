@@ -87,6 +87,8 @@ def load_ensemble():
                 loaded_models[name] = {"model": m, "config": config}
             except Exception as e:
                 st.error(f"Failed to load {name}: {e}")
+        else:
+            st.warning(f"Model file not found: {config['path']}")
     return loaded_models
 
 def crop_brain_contour(image):
@@ -190,7 +192,7 @@ else:
                 if name == "EfficientNetB0":
                     anchor_heatmap_img = final_img
             except Exception as e:
-                st.warning(f"Heatmap failed for {name}: {str(e)}")
+                st.warning(f"Heatmap failed for {name}")
 
     # --- ROW 3: ACTION BAR ---
     st.divider()
