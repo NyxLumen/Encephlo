@@ -38,44 +38,28 @@ except ImportError:
     st.error("⚠️ System Error: Missing modules (utils.py or report.py)")
     st.stop()
 
-#OLDER VER
-
-# ENSEMBLE_CONFIG = {
-#     "EfficientNetB0": {
-#         "path": "models/efficientnetb0.keras", 
-#         "layer": "top_activation",
-#         "preprocess": tf.keras.applications.efficientnet.preprocess_input
-#     },
-#     "MobileNetV2": {
-#         "path": "models/efficientnetb0.keras", # FAKE PATH
-#         "layer": "top_activation",          # FAKE LAYER
-#         "preprocess": tf.keras.applications.efficientnet.preprocess_input
-#     },
-#     "DenseNet121": {
-#         "path": "models/efficientnetb0.keras", # FAKE PATH
-#         "layer": "top_activation",          # FAKE LAYER
-#         "preprocess": tf.keras.applications.efficientnet.preprocess_input
-#     }
-# }
-
-def resnet_prep(img_batch):
-    return img_batch / 255.0
-
+# --- CONFIGURATION (UPDATED FOR MULTI-MODEL SUPPORT) ---
+# Each model has its own unique "eyes" (preprocessing) and "map" (layer name)
 ENSEMBLE_CONFIG = {
     "EfficientNetB0": {
-        "path": "models/model.h5",         # Your working ResNet50
-        "layer": "conv5_block3_out",       # ResNet50's Grad-CAM layer
-        "preprocess": resnet_prep
+        "path": "models/best_model.keras",          # Your new high-acc model
+        "layer": "efficientnetb0",                  # Layer name for *this* specific model structure
+        "preprocess": tf.keras.applications.efficientnet.preprocess_input
+    },
+    "ResNet50": {
+        "path": "models/resnet50.h5",               # Placeholder path
+        "layer": "conv5_block3_out",                # Standard ResNet last conv layer
+        "preprocess": tf.keras.applications.resnet50.preprocess_input
     },
     "MobileNetV2": {
-        "path": "models/model.h5",         # Your working ResNet50
-        "layer": "conv5_block3_out",       # ResNet50's Grad-CAM layer
-        "preprocess": resnet_prep
+        "path": "models/mobilenetv2.h5",            # Placeholder path
+        "layer": "out_relu",                        # Standard MobileNetV2 last conv layer
+        "preprocess": tf.keras.applications.mobilenet_v2.preprocess_input
     },
     "DenseNet121": {
-        "path": "models/model.h5",         # Your working ResNet50
-        "layer": "conv5_block3_out",       # ResNet50's Grad-CAM layer
-        "preprocess": resnet_prep
+        "path": "models/densenet121.h5",            # Placeholder path
+        "layer": "relu",                            # Standard DenseNet last conv layer
+        "preprocess": tf.keras.applications.densenet.preprocess_input
     }
 }
 
@@ -85,10 +69,13 @@ def load_ensemble():
     for name, config in ENSEMBLE_CONFIG.items():
         if os.path.exists(config["path"]):
             try:
+                # Compile=False is safer for inference
                 m = tf.keras.models.load_model(config["path"], compile=False)
                 loaded_models[name] = {"model": m, "config": config}
             except Exception as e:
                 st.error(f"Failed to load {name}: {e}")
+        else:
+            st.warning(f"Model file not found: {config['path']}")
     return loaded_models
 
 def crop_brain_contour(image):
@@ -111,7 +98,7 @@ def crop_brain_contour(image):
 with st.sidebar:
     st.image("https://img.icons8.com/fluency/96/brain.png", width=60)
     st.title("ENCEPHLO")
-    st.caption("v2.0 | Neural Diagnostic Suite")
+    st.caption("v2.1 | Neural Diagnostic Suite")
     st.divider()
     
     uploaded_file = st.file_uploader("📂 Load MRI Scan", type=["jpg", "png", "jpeg"])
@@ -120,9 +107,9 @@ with st.sidebar:
     st.write("⚙️ **System Config**")
     
     models = load_ensemble()
-    status_color = "🟢" if len(models) == 3 else "🟡" if len(models) > 0 else "🔴"
-    st.write(f"System State: {status_color} {len(models)}/3 Active")
-    st.write("Engine: Hybrid Consensus (Soft Voting)")
+    status_color = "🟢" if len(models) >= 1 else "🔴"
+    st.write(f"System State: {status_color} {len(models)} Active")
+    st.write("Engine: EfficientNet B0 (Optimized)")
 
 # --- MAIN DASHBOARD ---
 if uploaded_file is None:
@@ -142,8 +129,14 @@ else:
     start_time = time.time()
     predictions_list = []
     
+    if not models:
+        st.error("No models loaded. Please check model path in `app.py`.")
+        st.stop()
+        
     for name, data in models.items():
         # Apply model-specific preprocessing
+        # Note: EfficientNet preprocess expects [0-255], ResNet usually [0-1] or specific mean subtraction
+        # We use strict configuration from ENSEMBLE_CONFIG
         img_prepped = data["config"]["preprocess"](np.expand_dims(img_array.copy(), axis=0))
         preds = data["model"].predict(img_prepped, verbose=0)
         predictions_list.append(preds)
@@ -154,6 +147,8 @@ else:
     # Average the predictions
     final_preds = np.mean(predictions_list, axis=0) if predictions_list else np.zeros((1, 4))
     
+    # Class names must match training (alphabetical usually for flow_from_directory)
+    # ['glioma', 'meningioma', 'notumor', 'pituitary']
     class_names = ['Glioma', 'Meningioma', 'No Tumor', 'Pituitary']
     pred_idx = np.argmax(final_preds)
     result = class_names[pred_idx]
@@ -161,38 +156,41 @@ else:
 
     # --- ROW 1: HUD ---
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Ensemble Diagnosis", result, delta_color="inverse")
-    c2.metric("Consensus Confidence", f"{confidence:.1f}%")
-    c3.metric("Inference Time", f"{inference_time} ms")
-    c4.metric("Models Voted", str(len(models))) 
+    c1.metric("Diagnosis", result, delta_color="inverse")
+    c2.metric("Confidence", f"{confidence:.1f}%")
+    c3.metric("Latency", f"{inference_time} ms")
+    c4.metric("Active Models", str(len(models))) 
     
     st.divider()
 
     # --- ROW 2: THE COUNCIL VIEW ---
-    st.subheader("🧠 The Council's Vision (XAI)")
+    st.subheader("🧠 Explainable AI (Grad-CAM)")
     
-    col_input, col_m1, col_m2, col_m3 = st.columns(4)
+    col_input, col_m1 = st.columns([1, 1])
     
     with col_input:
         st.image(img_converted, use_container_width=True, caption="Processed Input")
     
-    # Generate Heatmaps for all 3 models
-    display_cols = [col_m1, col_m2, col_m3]
+    # Generate Heatmaps
     anchor_heatmap_img = None # Save one for the PDF report
     
     for i, (name, data) in enumerate(models.items()):
-        with display_cols[i]:
+        # We only show the first model's heatmap to keep UI clean if multiple identical models
+        if i > 0 and name.startswith("Model_"): continue 
+        
+        with col_m1:
             try:
                 img_prepped = data["config"]["preprocess"](np.expand_dims(img_array.copy(), axis=0))
+                
+                # Grad-CAM
                 heatmap = make_gradcam_heatmap(img_prepped, data["model"], data["config"]["layer"])
                 final_img = overlay_heatmap(img_converted, heatmap)
                 
-                st.image(final_img, use_container_width=True, caption=f"{name}")
+                st.image(final_img, use_container_width=True, caption=f"{name} Attention Map")
+                anchor_heatmap_img = final_img
                 
-                if name == "EfficientNetB0":
-                    anchor_heatmap_img = final_img
             except Exception as e:
-                st.warning(f"Heatmap failed for {name}")
+                st.warning(f"Heatmap failed for {name}: {e}")
 
     # --- ROW 3: ACTION BAR ---
     st.divider()
@@ -200,7 +198,7 @@ else:
     if result == "No Tumor":
         st.success(f"✅ CONSENSUS REACHED: No anomalies detected ({confidence:.1f}%)")
     else:
-        st.error(f"⚠️ CRITICAL: Consensus match for {result.upper()} detected ({confidence:.1f}%)")
+        st.error(f"⚠️ CRITICAL: {result.upper()} detected ({confidence:.1f}%)")
 
     # PDF Button
     col_btn, _ = st.columns([1, 4])
