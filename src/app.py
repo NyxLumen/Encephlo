@@ -38,46 +38,44 @@ except ImportError:
     st.error("⚠️ System Error: Missing modules (utils.py or report.py)")
     st.stop()
 
-#OLDER VER
+ENSEMBLE_CONFIG = {
+    "EfficientNetB0": {
+        "path": "models/efficientnetb0.keras", 
+        "layer": "top_conv",
+        "preprocess": tf.keras.applications.efficientnet.preprocess_input
+    },
+    "MobileNetV2": {
+        "path": "models/efficientnetb0.keras", # FAKE PATH
+        "layer": "top_conv",          # FAKE LAYER
+        "preprocess": tf.keras.applications.efficientnet.preprocess_input
+    },
+    "DenseNet121": {
+        "path": "models/efficientnetb0.keras", # FAKE PATH
+        "layer": "top_conv",          # FAKE LAYER
+        "preprocess": tf.keras.applications.efficientnet.preprocess_input
+    }
+}
+
+# def resnet_prep(img_batch):
+#     return img_batch / 255.0
 
 # ENSEMBLE_CONFIG = {
 #     "EfficientNetB0": {
-#         "path": "models/efficientnetb0.keras", 
-#         "layer": "top_activation",
-#         "preprocess": tf.keras.applications.efficientnet.preprocess_input
+#         "path": "models/model.h5",         # Your working ResNet50
+#         "layer": "conv5_block3_out",       # ResNet50's Grad-CAM layer
+#         "preprocess": resnet_prep
 #     },
 #     "MobileNetV2": {
-#         "path": "models/efficientnetb0.keras", # FAKE PATH
-#         "layer": "top_activation",          # FAKE LAYER
-#         "preprocess": tf.keras.applications.efficientnet.preprocess_input
+#         "path": "models/model.h5",         # Your working ResNet50
+#         "layer": "conv5_block3_out",       # ResNet50's Grad-CAM layer
+#         "preprocess": resnet_prep
 #     },
 #     "DenseNet121": {
-#         "path": "models/efficientnetb0.keras", # FAKE PATH
-#         "layer": "top_activation",          # FAKE LAYER
-#         "preprocess": tf.keras.applications.efficientnet.preprocess_input
+#         "path": "models/model.h5",         # Your working ResNet50
+#         "layer": "conv5_block3_out",       # ResNet50's Grad-CAM layer
+#         "preprocess": resnet_prep
 #     }
 # }
-
-def resnet_prep(img_batch):
-    return img_batch / 255.0
-
-ENSEMBLE_CONFIG = {
-    "EfficientNetB0": {
-        "path": "models/model.h5",         # Your working ResNet50
-        "layer": "conv5_block3_out",       # ResNet50's Grad-CAM layer
-        "preprocess": resnet_prep
-    },
-    "MobileNetV2": {
-        "path": "models/model.h5",         # Your working ResNet50
-        "layer": "conv5_block3_out",       # ResNet50's Grad-CAM layer
-        "preprocess": resnet_prep
-    },
-    "DenseNet121": {
-        "path": "models/model.h5",         # Your working ResNet50
-        "layer": "conv5_block3_out",       # ResNet50's Grad-CAM layer
-        "preprocess": resnet_prep
-    }
-}
 
 @st.cache_resource
 def load_ensemble():
@@ -192,7 +190,7 @@ else:
                 if name == "EfficientNetB0":
                     anchor_heatmap_img = final_img
             except Exception as e:
-                st.warning(f"Heatmap failed for {name}")
+                st.warning(f"Heatmap failed for {name}: {str(e)}")
 
     # --- ROW 3: ACTION BAR ---
     st.divider()
