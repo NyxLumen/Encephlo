@@ -40,19 +40,19 @@ except ImportError:
 
 ENSEMBLE_CONFIG = {
     "EfficientNetB0": {
-        "path": "models/efficientnetb0.keras", 
+        "path": "models/efficientnetb0.keras",
         "layer": "top_conv",
         "preprocess": tf.keras.applications.efficientnet.preprocess_input
     },
     "MobileNetV2": {
-        "path": "models/efficientnetb0.keras", # FAKE PATH
-        "layer": "top_conv",          # FAKE LAYER
-        "preprocess": tf.keras.applications.efficientnet.preprocess_input
+        "path": "models/mobilenetv2.keras",
+        "layer": "out_relu",
+        "preprocess": tf.keras.applications.mobilenet_v2.preprocess_input
     },
     "DenseNet121": {
-        "path": "models/efficientnetb0.keras", # FAKE PATH
-        "layer": "top_conv",          # FAKE LAYER
-        "preprocess": tf.keras.applications.efficientnet.preprocess_input
+        "path": "models/densenet121.keras",          # trained model
+        "layer": "conv5_block16_concat",             # last conv in Dense Block 4 — Grad-CAM target
+        "preprocess": tf.keras.applications.densenet.preprocess_input
     }
 }
 
