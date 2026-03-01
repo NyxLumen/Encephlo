@@ -39,6 +39,11 @@ except ImportError:
     st.stop()
 
 ENSEMBLE_CONFIG = {
+    "EfficientNetV2S_SE": {
+        "path": "models/efficientnetv2s_se.keras",
+        "layer": "top_conv",
+        "preprocess": tf.keras.applications.efficientnet_v2.preprocess_input
+    },
     "EfficientNetB0": {
         "path": "models/efficientnetb0.keras",
         "layer": "top_conv",
@@ -111,7 +116,7 @@ def crop_brain_contour(image):
 with st.sidebar:
     st.image("https://img.icons8.com/fluency/96/brain.png", width=60)
     st.title("ENCEPHLO")
-    st.caption("v2.0 | Neural Diagnostic Suite")
+    st.caption("v3.0 | Neural Diagnostic Suite")
     st.divider()
     
     uploaded_file = st.file_uploader("📂 Load MRI Scan", type=["jpg", "png", "jpeg"])
@@ -120,8 +125,8 @@ with st.sidebar:
     st.write("⚙️ **System Config**")
     
     models = load_ensemble()
-    status_color = "🟢" if len(models) == 3 else "🟡" if len(models) > 0 else "🔴"
-    st.write(f"System State: {status_color} {len(models)}/3 Active")
+    status_color = "🟢" if len(models) >= 2 else "🟡" if len(models) > 0 else "🔴"
+    st.write(f"System State: {status_color} {len(models)}/{len(ENSEMBLE_CONFIG)} Active")
     st.write("Engine: Hybrid Consensus (Soft Voting)")
 
 # --- MAIN DASHBOARD ---
@@ -189,7 +194,7 @@ else:
                 
                 st.image(final_img, use_container_width=True, caption=f"{name}")
                 
-                if name == "EfficientNetB0":
+                if name == "EfficientNetV2S_SE":
                     anchor_heatmap_img = final_img
             except Exception as e:
                 st.warning(f"Heatmap failed for {name}")

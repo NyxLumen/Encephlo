@@ -1,0 +1,26 @@
+{
+  "model_name": "EfficientNetV2S_SE",
+  "image_size": [
+    224,
+    224
+  ],
+  "batch_size": 32,
+  "num_classes": 4,
+  "class_names": [
+    "glioma",
+    "meningioma",
+    "notumor",
+    "pituitary"
+  ],
+  "phase1_epochs": 10,
+  "phase1_lr": 0.0001,
+  "phase2_epochs": 50,
+  "phase2_lr": 1e-05,
+  "fine_tune_percent": 0.4,
+  "weight_decay": 0.0001,
+  "focal_gamma": 2.0,
+  "dense_units": 512,
+  "dropout_rate": 0.4,
+  "se_ratio": 16,
+  "gradcam_layer": "top_conv"
+}
