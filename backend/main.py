@@ -3,9 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 import io
-# import numpy as np
-# from core.fusion_engine import extract_features, run_svm  <-- Sid uncomments these later
 
+# Import Sid's heavily restricted sandbox
+from core.fusion_engine import fusion_engine 
+
+app = FastAPI(title="Encephlo 3.0 Core API")
+# ... (keep the CORSMiddleware and DiagnosticResponse class the same) ...
 app = FastAPI(title="Encephlo 3.0 Core API")
 
 # 1. THE SHIELD: CORS Middleware (Allows your React frontend to talk to this backend)
@@ -64,23 +67,20 @@ async def analyze_scan(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="File must be an image.")
     
     try:
-        # Read the file from the React frontend
         image_bytes = await file.read()
         
-        # Pass to Sid's isolated logic box
-        results = process_neural_fusion(image_bytes)
+        # Hand off to Sid's sandbox. It handles everything and returns the clean dict.
+        results = fusion_engine.extract_and_fuse(image_bytes)
         
-        # Enforce the contract
         return DiagnosticResponse(
             status="success",
             diagnosis=results["diagnosis"],
             confidence=results["confidence"],
             inference_time_ms=results["inference_time_ms"],
-            heatmap_url=None # We will wire up the ScoreCAM 3D texture here later
+            heatmap_url=None
         )
         
     except Exception as e:
-        # If Sid's code crashes, it gets caught here and returns a clean error to React
         raise HTTPException(status_code=500, detail=f"Neural Engine Failure: {str(e)}")
 
 if __name__ == "__main__":

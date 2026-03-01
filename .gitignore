@@ -28,7 +28,7 @@ data/
 # ========================
 # These files are too big for standard GitHub.
 # Share them via Drive or Releases instead.
-models/
+
 *.h5
 *.keras
 *.tflite
