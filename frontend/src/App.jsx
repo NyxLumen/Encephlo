@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import BrainCanvas from "./components/BrainCanvas"; // <-- Import the 3D Canvas
 
 function App() {
 	const [selectedFile, setSelectedFile] = useState(null);
@@ -8,7 +9,6 @@ function App() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState(null);
 
-	// Handle file selection and generate a local preview
 	const handleFileChange = (e) => {
 		const file = e.target.files[0];
 		if (file) {
@@ -19,10 +19,8 @@ function App() {
 		}
 	};
 
-	// The actual API Call to your FastAPI Backend
 	const handleScan = async () => {
 		if (!selectedFile) return;
-
 		setLoading(true);
 		setError(null);
 
@@ -30,7 +28,6 @@ function App() {
 		formData.append("file", selectedFile);
 
 		try {
-			// Hitting the endpoint we built in main.py
 			const response = await axios.post(
 				"http://localhost:8000/api/v1/analyze",
 				formData,
@@ -38,7 +35,6 @@ function App() {
 					headers: { "Content-Type": "multipart/form-data" },
 				},
 			);
-
 			setMetrics(response.data);
 		} catch (err) {
 			console.error(err);
@@ -54,8 +50,8 @@ function App() {
 		<div
 			style={{
 				fontFamily: "system-ui",
-				padding: "40px",
-				maxWidth: "800px",
+				padding: "40px 5%",
+				maxWidth: "95%",
 				margin: "0 auto",
 				color: "#fff",
 				backgroundColor: "#121212",
@@ -63,80 +59,124 @@ function App() {
 			}}
 		>
 			<h1>
-				🧠 Encephlo 3.0 |{" "}
-				<span style={{ color: "#00ff88" }}>Tracer Bullet</span>
+				🧠 Encephlo 3.0{" "}
+				<span style={{ fontSize: "0.5em", color: "#888" }}>
+					Volumetric Diagnostics
+				</span>
 			</h1>
-			<p>Upload an MRI scan to test the FastAPI backend pipeline.</p>
 
 			<div
 				style={{
-					margin: "20px 0",
-					padding: "20px",
-					border: "1px dashed #444",
-					borderRadius: "8px",
+					display: "grid",
+					gridTemplateColumns: "1fr 2fr",
+					gap: "40px",
+					marginTop: "30px",
 				}}
 			>
-				<input type="file" accept="image/*" onChange={handleFileChange} />
-
-				{previewUrl && (
-					<div style={{ marginTop: "20px" }}>
-						<img
-							src={previewUrl}
-							alt="MRI Preview"
-							style={{ maxWidth: "200px", borderRadius: "8px" }}
-						/>
-					</div>
-				)}
-			</div>
-
-			<button
-				onClick={handleScan}
-				disabled={!selectedFile || loading}
-				style={{
-					padding: "10px 20px",
-					fontSize: "16px",
-					cursor: "pointer",
-					backgroundColor: "#00ff88",
-					color: "#000",
-					border: "none",
-					borderRadius: "4px",
-					fontWeight: "bold",
-				}}
-			>
-				{loading ? "Analyzing..." : "Run Neural Diagnostic"}
-			</button>
-
-			{error && (
+				{/* LEFT COLUMN: Controls & Upload */}
 				<div
 					style={{
-						marginTop: "20px",
-						padding: "15px",
-						backgroundColor: "#ff444422",
-						border: "1px solid #ff4444",
-						color: "#ff4444",
-						borderRadius: "4px",
-					}}
-				>
-					⚠️ {error}
-				</div>
-			)}
-
-			{metrics && (
-				<div
-					style={{
-						marginTop: "30px",
 						padding: "20px",
 						backgroundColor: "#1e1e1e",
-						borderRadius: "8px",
+						borderRadius: "12px",
 						border: "1px solid #333",
 					}}
 				>
-					<h3>✅ Backend Response Received</h3>
-					<pre style={{ color: "#00ff88", overflowX: "auto" }}>
-						{JSON.stringify(metrics, null, 2)}
-					</pre>
+					<h3>Data Input</h3>
+					<input
+						type="file"
+						accept="image/*"
+						onChange={handleFileChange}
+						style={{ marginBottom: "20px" }}
+					/>
+
+					{previewUrl && (
+						<div style={{ marginBottom: "20px" }}>
+							<img
+								src={previewUrl}
+								alt="MRI Preview"
+								style={{
+									width: "100%",
+									borderRadius: "8px",
+									border: "1px solid #444",
+								}}
+							/>
+						</div>
+					)}
+
+					<button
+						onClick={handleScan}
+						disabled={!selectedFile || loading}
+						style={{
+							width: "100%",
+							padding: "15px",
+							fontSize: "16px",
+							cursor: "pointer",
+							backgroundColor: "#00ff88",
+							color: "#000",
+							border: "none",
+							borderRadius: "8px",
+							fontWeight: "bold",
+						}}
+					>
+						{loading ? "Running Multimodal Fusion..." : "Initialize Scan"}
+					</button>
+
+					{error && (
+						<div style={{ marginTop: "15px", color: "#ff4444" }}>
+							⚠️ {error}
+						</div>
+					)}
+
+					{metrics && (
+						<div
+							style={{
+								marginTop: "20px",
+								padding: "15px",
+								backgroundColor: "#0a0a0a",
+								borderRadius: "8px",
+								border: "1px solid #333",
+							}}
+						>
+							<h4 style={{ margin: "0 0 10px 0", color: "#888" }}>
+								Ensemble Consensus
+							</h4>
+							<h2
+								style={{
+									margin: "0 0 5px 0",
+									color:
+										metrics.diagnosis === "No Tumor" ? "#00ff88" : "#ff4444",
+								}}
+							>
+								{metrics.diagnosis}
+							</h2>
+							<p style={{ margin: 0 }}>
+								Confidence: <strong>{metrics.confidence}%</strong>
+							</p>
+							<p style={{ margin: 0, fontSize: "0.8em", color: "#888" }}>
+								Inference: {metrics.inference_time_ms}ms
+							</p>
+						</div>
+					)}
 				</div>
-			)}
+
+				{/* RIGHT COLUMN: 3D XAI Interface */}
+				<div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+					<h3 style={{ marginTop: 0 }}>Spatial Attention (ScoreCAM)</h3>
+					{/* We pass the heatmap_url to the canvas if it exists */}
+					<BrainCanvas heatmapUrl={metrics?.heatmap_url} />
+					<p
+						style={{
+							fontSize: "0.8em",
+							color: "#666",
+							textAlign: "center",
+							marginTop: "10px",
+						}}
+					>
+						Left Click + Drag to Rotate | Scroll to Zoom
+					</p>
+				</div>
+			</div>
 		</div>
 	);
 }
