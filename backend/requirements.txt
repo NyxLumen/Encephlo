@@ -1,0 +1,8 @@
+fastapi==0.110.0
+uvicorn==0.29.0
+tensorflow==2.15.0  # Or whatever exact version Sid used to train the base models
+numpy==1.26.4
+opencv-python==4.9.0.80
+pillow==10.2.0
+scikit-learn==1.4.1.post1 # For the SVM Fusion Engine
+python-multipart==0.0.9 # Required for FastAPI file uploads
