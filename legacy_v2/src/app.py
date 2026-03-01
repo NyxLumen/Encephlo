@@ -41,18 +41,18 @@ except ImportError:
 ENSEMBLE_CONFIG = {
     "EfficientNetB0": {
         "path": "models/efficientnetb0.keras", 
-        "layer": "top_conv",
+        "layer": "top_activation",
         "preprocess": tf.keras.applications.efficientnet.preprocess_input
     },
     "MobileNetV2": {
         "path": "models/efficientnetb0.keras", # FAKE PATH
-        "layer": "top_conv",          # FAKE LAYER
+        "layer": "top_activation",          # FAKE LAYER
         "preprocess": tf.keras.applications.efficientnet.preprocess_input
     },
     "DenseNet121": {
-        "path": "models/efficientnetb0.keras", # FAKE PATH
-        "layer": "top_conv",          # FAKE LAYER
-        "preprocess": tf.keras.applications.efficientnet.preprocess_input
+        "path": "models/densenet121.keras",
+        "layer": "relu",          
+        "preprocess": tf.keras.applications.densenet.preprocess_input
     }
 }
 
@@ -192,7 +192,7 @@ else:
                 if name == "EfficientNetB0":
                     anchor_heatmap_img = final_img
             except Exception as e:
-                st.warning(f"Heatmap failed for {name}")
+                st.warning(f"Heatmap failed for {name}. ERROR: {str(e)}")
 
     # --- ROW 3: ACTION BAR ---
     st.divider()
