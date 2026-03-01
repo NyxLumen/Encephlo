@@ -1,6 +1,6 @@
 fastapi==0.110.0
 uvicorn==0.29.0
-tensorflow==2.15.0  # Or whatever exact version Sid used to train the base models
+tensorflow==2.20.0 
 numpy==1.26.4
 opencv-python==4.9.0.80
 pillow==10.2.0
