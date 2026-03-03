@@ -7,9 +7,16 @@ import cv2
 from tqdm import tqdm
 
 # Configuration
-BASE_DIR = r"c:\Users\Siddharth Gupta\Desktop\main_encephlo"
+if os.path.exists("/content"):
+    # Google Colab path
+    BASE_DIR = "/content"
+    MODELS_DIR = "/content/models"
+else:
+    # Local Windows path
+    BASE_DIR = r"c:\Users\Siddharth Gupta\Desktop\main_encephlo\Encephlo"
+    MODELS_DIR = os.path.join(BASE_DIR, "backend", "models")
+
 TRAIN_DIR = os.path.join(BASE_DIR, "MRI images", "Training")
-MODELS_DIR = r"c:\Users\Siddharth Gupta\Desktop\main_encephlo\Encephlo\backend\models"
 
 EFFNET_PATH = os.path.join(MODELS_DIR, "efficientnetb0.keras")
 DENSENET_PATH = os.path.join(MODELS_DIR, "densenet121.keras")

@@ -9,7 +9,13 @@ from transformers import TFViTForImageClassification, ViTImageProcessor
 # CONFIGURATION
 # ─────────────────────────────────────────────
 # Base dataset path
-BASE_DIR = r"c:\Users\Siddharth Gupta\Desktop\main_encephlo"
+if os.path.exists("/content"):
+    # Google Colab path
+    BASE_DIR = "/content"
+else:
+    # Local Windows path
+    BASE_DIR = r"c:\Users\Siddharth Gupta\Desktop\main_encephlo\Encephlo"
+
 TRAIN_DIR = os.path.join(BASE_DIR, "MRI images", "Training")
 TEST_DIR  = os.path.join(BASE_DIR, "MRI images", "Testing")
 
