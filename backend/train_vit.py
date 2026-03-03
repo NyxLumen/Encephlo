@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers, callbacks
-from transformers import TFViTForImageClassification, ViTImageProcessor
+from transformers import TFAutoModelForImageClassification, AutoImageProcessor
 
 # ─────────────────────────────────────────────
 # CONFIGURATION
@@ -34,7 +34,7 @@ print("LOADING DATA FOR VISION TRANSFORMER (HuggingFace)")
 print("=" * 60)
 
 # Use HuggingFace Feature Extractor for ViT Base
-processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224-in21k")
+processor = AutoImageProcessor.from_pretrained("google/vit-base-patch16-224-in21k")
 
 def process_image(image_path, label):
     # Load and decode image
@@ -87,7 +87,7 @@ print("BUILDING ViT MODEL")
 print("=" * 60)
 
 # Load pre-trained ViT
-model = TFViTForImageClassification.from_pretrained(
+model = TFAutoModelForImageClassification.from_pretrained(
     "google/vit-base-patch16-224-in21k", 
     num_labels=NUM_CLASSES
 )
