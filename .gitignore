@@ -35,6 +35,7 @@ data/
 *.pt
 *.pth
 *.onnx
+*.pkl
 
 # ========================
 # 📓 Jupyter Notebooks
