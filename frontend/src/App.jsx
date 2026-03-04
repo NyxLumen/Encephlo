@@ -1,184 +1,154 @@
-import { useState } from "react";
-import axios from "axios";
-import BrainCanvas from "./components/BrainCanvas"; // <-- Import the 3D Canvas
+import React, { useState } from "react";
+import BrainCanvas from "./components/BrainCanvas";
+import "./App.css";
 
-function App() {
-	const [selectedFile, setSelectedFile] = useState(null);
-	const [previewUrl, setPreviewUrl] = useState(null);
-	const [metrics, setMetrics] = useState(null);
+export default function MainDashboard() {
+	const [file, setFile] = useState(null);
+	const [preview, setPreview] = useState(null);
 	const [loading, setLoading] = useState(false);
+	const [result, setResult] = useState(null);
 	const [error, setError] = useState(null);
 
+	const getHeatmapTexture = (diagnosis) => {
+		switch (diagnosis) {
+			case "Glioma":
+				return "/heatmaps/glioma_glow.jpg";
+			case "Meningioma":
+				return "/heatmaps/meningioma_glow.jpg";
+			case "Pituitary":
+				return "/heatmaps/pituitary_glow.jpg";
+			default:
+				return "/dummy_map.jpg";
+		}
+	};
+
 	const handleFileChange = (e) => {
-		const file = e.target.files[0];
-		if (file) {
-			setSelectedFile(file);
-			setPreviewUrl(URL.createObjectURL(file));
-			setMetrics(null);
+		const selectedFile = e.target.files[0];
+		if (selectedFile) {
+			setFile(selectedFile);
+			setPreview(URL.createObjectURL(selectedFile));
+			setResult(null);
 			setError(null);
 		}
 	};
 
-	const handleScan = async () => {
-		if (!selectedFile) return;
+	const analyzeScan = async () => {
+		if (!file) return;
 		setLoading(true);
 		setError(null);
 
 		const formData = new FormData();
-		formData.append("file", selectedFile);
+		formData.append("file", file);
 
 		try {
-			const response = await axios.post(
-				"http://localhost:8000/api/v1/analyze",
-				formData,
-				{
-					headers: { "Content-Type": "multipart/form-data" },
-				},
-			);
-			setMetrics(response.data);
+			const response = await fetch("http://localhost:8000/api/v1/analyze", {
+				method: "POST",
+				body: formData,
+			});
+
+			if (!response.ok) throw new Error("Backend connection failed.");
+
+			const data = await response.json();
+			setResult(data);
 		} catch (err) {
-			console.error(err);
-			setError(
-				err.response?.data?.detail || "Failed to connect to Neural Engine.",
-			);
+			setError(err.message || "Failed to connect to the Neural Engine.");
 		} finally {
 			setLoading(false);
 		}
 	};
 
 	return (
-		<div
-			style={{
-				fontFamily: "system-ui",
-				padding: "40px 5%",
-				maxWidth: "95%",
-				margin: "0 auto",
-				color: "#fff",
-				backgroundColor: "#121212",
-				minHeight: "100vh",
-			}}
-		>
-			<h1>
-				🧠 Encephlo 3.0{" "}
-				<span style={{ fontSize: "0.5em", color: "#888" }}>
-					Volumetric Diagnostics
-				</span>
-			</h1>
+		<div className="dashboard-container">
+			<header className="dashboard-header">
+				<h1>Encephlo 3.0 // Neural Fusion</h1>
+				<p>1,792-Dimensional Hybrid SVM Architecture</p>
+			</header>
 
-			<div
-				style={{
-					display: "grid",
-					gridTemplateColumns: "1fr 2fr",
-					gap: "40px",
-					marginTop: "30px",
-				}}
-			>
-				{/* LEFT COLUMN: Controls & Upload */}
-				<div
-					style={{
-						padding: "20px",
-						backgroundColor: "#1e1e1e",
-						borderRadius: "12px",
-						border: "1px solid #333",
-					}}
-				>
-					<h3>Data Input</h3>
-					<input
-						type="file"
-						accept="image/*"
-						onChange={handleFileChange}
-						style={{ marginBottom: "20px" }}
-					/>
+			<div className="dashboard-layout">
+				{/* LEFT COLUMN: Controls & Results */}
+				<div className="control-panel">
+					<div className="upload-card">
+						<h2>Input MRI Scan</h2>
 
-					{previewUrl && (
-						<div style={{ marginBottom: "20px" }}>
-							<img
-								src={previewUrl}
-								alt="MRI Preview"
-								style={{
-									width: "100%",
-									borderRadius: "8px",
-									border: "1px solid #444",
-								}}
+						<div className="upload-dropzone">
+							<input
+								type="file"
+								accept="image/*"
+								onChange={handleFileChange}
+								id="mri-upload"
 							/>
+							<label htmlFor="mri-upload">
+								{preview ? (
+									<img
+										src={preview}
+										alt="MRI Preview"
+										className="preview-image"
+									/>
+								) : (
+									<div className="upload-placeholder">
+										<span>Click or Drag MRI Here</span>
+									</div>
+								)}
+							</label>
 						</div>
-					)}
 
-					<button
-						onClick={handleScan}
-						disabled={!selectedFile || loading}
-						style={{
-							width: "100%",
-							padding: "15px",
-							fontSize: "16px",
-							cursor: "pointer",
-							backgroundColor: "#00ff88",
-							color: "#000",
-							border: "none",
-							borderRadius: "8px",
-							fontWeight: "bold",
-						}}
-					>
-						{loading ? "Running Multimodal Fusion..." : "Initialize Scan"}
-					</button>
-
-					{error && (
-						<div style={{ marginTop: "15px", color: "#ff4444" }}>
-							⚠️ {error}
-						</div>
-					)}
-
-					{metrics && (
-						<div
-							style={{
-								marginTop: "20px",
-								padding: "15px",
-								backgroundColor: "#0a0a0a",
-								borderRadius: "8px",
-								border: "1px solid #333",
-							}}
+						<button
+							onClick={analyzeScan}
+							disabled={!file || loading}
+							className={`action-btn ${loading || !file ? "disabled" : "active"}`}
 						>
-							<h4 style={{ margin: "0 0 10px 0", color: "#888" }}>
-								Ensemble Consensus
-							</h4>
-							<h2
-								style={{
-									margin: "0 0 5px 0",
-									color:
-										metrics.diagnosis === "No Tumor" ? "#00ff88" : "#ff4444",
-								}}
-							>
-								{metrics.diagnosis}
-							</h2>
-							<p style={{ margin: 0 }}>
-								Confidence: <strong>{metrics.confidence}%</strong>
-							</p>
-							<p style={{ margin: 0, fontSize: "0.8em", color: "#888" }}>
-								Inference: {metrics.inference_time_ms}ms
-							</p>
+							{loading ? "Fusing Feature Vectors..." : "Run SVM Inference"}
+						</button>
+					</div>
+
+					{error && <div className="error-banner">{error}</div>}
+
+					{result && (
+						<div className="results-card">
+							<h3>Diagnostic Output</h3>
+
+							<div className="diagnosis-section">
+								<span className="label">Classification</span>
+								<span
+									className={`diagnosis-text ${result.diagnosis === "No Tumor" ? "safe" : "danger"}`}
+								>
+									{result.diagnosis}
+								</span>
+							</div>
+
+							<div className="metrics-grid">
+								<div className="metric-box">
+									<span className="label">Confidence</span>
+									<span className="value confidence">{result.confidence}%</span>
+								</div>
+								<div className="metric-box">
+									<span className="label">Latency</span>
+									<span className="value latency">
+										{result.inference_time_ms}ms
+									</span>
+								</div>
+							</div>
 						</div>
 					)}
 				</div>
 
-				{/* RIGHT COLUMN: 3D XAI Interface */}
-				<div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-					<h3 style={{ marginTop: 0 }}>Spatial Attention (ScoreCAM)</h3>
-					{/* We pass the heatmap_url to the canvas if it exists */}
-					<BrainCanvas heatmapUrl={metrics?.heatmap_url} />
-					<p
-						style={{
-							fontSize: "0.8em",
-							color: "#666",
-							textAlign: "center",
-							marginTop: "10px",
-						}}
-					>
-						Left Click + Drag to Rotate | Scroll to Zoom
-					</p>
+				{/* RIGHT COLUMN: The 3D Holographic Brain */}
+				<div className="visualization-panel">
+					<div className="canvas-wrapper">
+						<div className="tech-overlay">
+							<p>OBJ: HUMAN_BRAIN_01</p>
+							<p>MAT: ADDITIVE_BLEND_HOLO</p>
+							<p>
+								MAP: {result ? result.diagnosis.toUpperCase() : "AWAITING_DATA"}
+							</p>
+						</div>
+
+						<BrainCanvas
+							heatmapUrl={result ? getHeatmapTexture(result.diagnosis) : null}
+						/>
+					</div>
 				</div>
 			</div>
 		</div>
 	);
 }
-
-export default App;

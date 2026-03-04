@@ -1,35 +1,65 @@
 import { Suspense, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF } from "@react-three/drei";
+import { OrbitControls, useGLTF, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 
 const BrainModel = ({ heatmapUrl }) => {
-	// 1. Load the file from the public folder
-	// Change this to '/brain.gltf' if your file is a .gltf
 	const { scene } = useGLTF("/brain.glb");
 
-	// 2. Clone the scene so React doesn't complain about mutating cached objects
-	const clonedScene = useMemo(() => scene.clone(), [scene]);
+	// We need TWO clones now. One for the glass, one for the hologram.
+	const baseScene = useMemo(() => scene.clone(), [scene]);
+	const overlayScene = useMemo(() => scene.clone(), [scene]);
 
-	// 3. The Material Override (The "Medical Glass" Look)
+	const textureToLoad = heatmapUrl || "/dummy_map.jpg";
+	const rawTexture = useTexture(textureToLoad);
+
+	const heatmapTexture = useMemo(() => {
+		const tex = rawTexture.clone();
+		tex.flipY = false;
+		tex.colorSpace = THREE.SRGBColorSpace;
+		tex.needsUpdate = true;
+		return tex;
+	}, [rawTexture]);
+
+	// 1. The Glass Base Layer
 	useMemo(() => {
-		clonedScene.traverse((child) => {
+		baseScene.traverse((child) => {
 			if (child.isMesh) {
-				// Strip the old pink/white color and apply our clean UI material
 				child.material = new THREE.MeshStandardMaterial({
 					color: "#ffffff",
 					transparent: true,
-					opacity: heatmapUrl ? 1 : 0.6, // Solid if there's a heatmap, ghostly if not
-					roughness: 0.4,
-					metalness: 0.1,
-					wireframe: !heatmapUrl, // Shows a cool wireframe until the scan runs
+					opacity: 0.15, // Very faint ghostly glass
+					roughness: 0.1,
+					metalness: 0.5,
 				});
 			}
 		});
-	}, [clonedScene, heatmapUrl]);
+	}, [baseScene]);
 
-	// 4. Render it. You might need to tweak the scale=[1, 1, 1] depending on how big the Sketchfab model was.
-	return <primitive object={clonedScene} scale={25} position={[0, 0, 0]} />;
+	// 2. The Holographic Heatmap Layer
+	useMemo(() => {
+		overlayScene.traverse((child) => {
+			if (child.isMesh) {
+				child.material = new THREE.MeshStandardMaterial({
+					map: heatmapTexture,
+					emissiveMap: heatmapTexture,
+					emissiveIntensity: 2.0, // Makes the colors pop
+					transparent: true,
+					blending: THREE.AdditiveBlending, // THE MAGIC: Black pixels become invisible!
+					depthWrite: false, // Stops the two meshes from glitching into each other
+				});
+			}
+		});
+	}, [overlayScene, heatmapTexture]);
+
+	return (
+		<group scale={25}>
+			{/* Render the glass brain */}
+			<primitive object={baseScene} />
+			{/* Render the heatmap overlay slightly larger (1.01x) so it floats on top */}
+			<primitive object={overlayScene} scale={1.01} />
+		</group>
+	);
 };
 
 export default function BrainCanvas({ heatmapUrl }) {
@@ -38,7 +68,7 @@ export default function BrainCanvas({ heatmapUrl }) {
 			style={{
 				position: "relative",
 				width: "100%",
-				height: "70vh0",
+				height: "70vh",
 				minHeight: "600px",
 				backgroundColor: "#050505",
 				borderRadius: "12px",
@@ -47,36 +77,18 @@ export default function BrainCanvas({ heatmapUrl }) {
 			}}
 		>
 			<Canvas camera={{ position: [0, 0, 6], fov: 45 }}>
-				{/* Cinematic UI Lighting */}
-				<ambientLight intensity={0.5} />
+				<ambientLight intensity={0.2} />
 				<directionalLight
 					position={[10, 10, 10]}
-					intensity={1}
+					intensity={0.5}
 					color="#ffffff"
 				/>
-				<directionalLight
-					position={[-10, -10, -5]}
-					intensity={0.5}
-					color="#00ff88"
-				/>
 
-				<Suspense
-					fallback={
-						<mesh>
-							<boxGeometry args={[1, 1, 1]} />
-							<meshBasicMaterial color="red" wireframe />
-						</mesh>
-					}
-				>
+				<Suspense fallback={null}>
 					<BrainModel heatmapUrl={heatmapUrl} />
 				</Suspense>
 
-				<OrbitControls
-					enableZoom={true}
-					autoRotate={!heatmapUrl}
-					autoRotateSpeed={1.0}
-					enablePan={false}
-				/>
+				<OrbitControls enableZoom={true} autoRotate={false} enablePan={false} />
 			</Canvas>
 		</div>
 	);

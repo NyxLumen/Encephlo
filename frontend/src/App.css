@@ -1,42 +1,233 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* Base Container */
+.dashboard-container {
+	min-height: 100vh;
+	background-color: #050505;
+	color: #ffffff;
+	font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	padding: 2rem;
+	box-sizing: border-box;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Header */
+.dashboard-header {
+	margin-bottom: 2rem;
+	border-bottom: 1px solid #1f2937;
+	padding-bottom: 1rem;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.dashboard-header h1 {
+	font-size: 2rem;
+	margin: 0;
+	background: linear-gradient(to right, #60a5fa, #67e8f9);
+	background-clip: text;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.dashboard-header p {
+	color: #6b7280;
+	font-size: 0.875rem;
+	margin-top: 0.5rem;
 }
 
-.card {
-  padding: 2em;
+/* Grid Layout */
+.dashboard-layout {
+	display: flex;
+	gap: 2rem;
+	flex-wrap: wrap;
 }
 
-.read-the-docs {
-  color: #888;
+.control-panel {
+	flex: 1;
+	min-width: 300px;
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+}
+
+.visualization-panel {
+	flex: 2.5;
+	min-width: 400px;
+}
+
+/* Cards */
+.upload-card,
+.results-card {
+	background-color: #111111;
+	border: 1px solid #1f2937;
+	border-radius: 0.75rem;
+	padding: 1.5rem;
+	box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+.upload-card h2 {
+	font-size: 1.125rem;
+	color: #d1d5db;
+	margin-top: 0;
+	margin-bottom: 1rem;
+}
+
+/* Dropzone */
+.upload-dropzone {
+	border: 2px dashed #374151;
+	border-radius: 0.5rem;
+	padding: 1rem;
+	text-align: center;
+	background-color: #0a0a0a;
+	transition: border-color 0.2s;
+}
+
+.upload-dropzone:hover {
+	border-color: #3b82f6;
+}
+
+.upload-dropzone input {
+	display: none;
+}
+
+.upload-dropzone label {
+	cursor: pointer;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-height: 160px;
+}
+
+.preview-image {
+	max-height: 160px;
+	border-radius: 0.25rem;
+	object-fit: contain;
+}
+
+.upload-placeholder {
+	color: #6b7280;
+	font-size: 0.875rem;
+}
+
+/* Button */
+.action-btn {
+	width: 100%;
+	margin-top: 1.5rem;
+	padding: 0.75rem;
+	border-radius: 0.5rem;
+	font-weight: bold;
+	border: none;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.action-btn.active {
+	background-color: #2563eb;
+	color: white;
+	box-shadow: 0 0 15px rgba(37, 99, 235, 0.4);
+}
+
+.action-btn.active:hover {
+	background-color: #1d4ed8;
+}
+
+.action-btn.disabled {
+	background-color: #1f2937;
+	color: #6b7280;
+	cursor: not-allowed;
+}
+
+/* Error Banner */
+.error-banner {
+	padding: 1rem;
+	background-color: rgba(127, 29, 29, 0.2);
+	border: 1px solid rgba(239, 68, 68, 0.5);
+	border-radius: 0.5rem;
+	color: #f87171;
+	font-size: 0.875rem;
+}
+
+/* Results Formatting */
+.results-card h3 {
+	font-size: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: #6b7280;
+	border-bottom: 1px solid #1f2937;
+	padding-bottom: 0.5rem;
+	margin-top: 0;
+	margin-bottom: 1rem;
+}
+
+.diagnosis-section {
+	margin-bottom: 1.5rem;
+}
+
+.label {
+	display: block;
+	font-size: 0.75rem;
+	color: #9ca3af;
+	margin-bottom: 0.25rem;
+}
+
+.diagnosis-text {
+	font-size: 1.875rem;
+	font-weight: bold;
+}
+
+.diagnosis-text.safe {
+	color: #4ade80;
+}
+.diagnosis-text.danger {
+	color: #f87171;
+}
+
+.metrics-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1rem;
+}
+
+.metric-box {
+	background-color: #0a0a0a;
+	padding: 0.75rem;
+	border-radius: 0.25rem;
+	border: 1px solid #1f2937;
+}
+
+.value {
+	font-size: 1.25rem;
+	font-weight: 600;
+}
+
+.value.confidence {
+	color: #60a5fa;
+}
+.value.latency {
+	color: #d1d5db;
+}
+
+/* 3D Visualizer Panel */
+.canvas-wrapper {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	min-height: 600px;
+	border-radius: 0.75rem;
+	overflow: hidden;
+	border: 1px solid #1f2937;
+	background-color: #000000;
+	box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.tech-overlay {
+	position: absolute;
+	top: 1rem;
+	left: 1rem;
+	z-index: 10;
+	pointer-events: none;
+	font-family: monospace;
+	font-size: 0.75rem;
+	color: #06b6d4;
+	opacity: 0.7;
+}
+
+.tech-overlay p {
+	margin: 0 0 0.25rem 0;
 }
