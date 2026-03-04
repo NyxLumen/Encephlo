@@ -13,11 +13,11 @@ from transformers import ViTForImageClassification, ViTImageProcessor
 # CONFIGURATION
 # ─────────────────────────────────────────────
 # Put a random MRI scan in the backend folder and rename it to test_image.jpg
-TEST_IMAGE = "test_image.jpg" 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-VIT_PATH = "models/vit_feature_extractor.pt"
-# Change this to whatever Sid named his file
-DENSENET_PATH = "models/densenet121.h5" 
+TEST_IMAGE = os.path.join(BASE_DIR, "test_image.jpg") 
+VIT_PATH = os.path.join(BASE_DIR, "models", "vit_feature_extractor.pt")
+DENSENET_PATH = os.path.join(BASE_DIR, "models", "densenet121.keras") 
 
 print("🚀 INITIATING LOCAL MODEL TEST...\n")
 
@@ -31,22 +31,20 @@ def test_vit():
         return None
 
     try:
-        # Load the base architecture
         processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224-in21k")
         model = ViTForImageClassification.from_pretrained("google/vit-base-patch16-224-in21k", num_labels=4)
         
-        # Inject your 99.53% weights
         model.vit.load_state_dict(torch.load(VIT_PATH, map_location="cpu"))
         model.eval()
         print("✅ ViT Weights Loaded Successfully.")
 
-        # Process Image
         image = Image.open(TEST_IMAGE).convert("RGB")
         inputs = processor(images=image, return_tensors="pt")
 
-        # Run Inference
         with torch.no_grad():
-            features = model.vit(**inputs).pooler_output
+            outputs = model.vit(**inputs)
+            # Grab the [CLS] token (index 0) from the last hidden state!
+            features = outputs.last_hidden_state[:, 0, :]
             
         print(f"✅ ViT Inference Complete! Extracted Vector Shape: {features.shape}")
         return features.numpy()
@@ -61,23 +59,24 @@ def test_vit():
 def test_tf():
     print("\n🔬 --- TESTING DENSENET (TensorFlow) ---")
     if not os.path.exists(DENSENET_PATH):
-        print(f"⚠️ Warning: Could not find {DENSENET_PATH}. Tell Sid to hurry up.")
+        print(f"⚠️ Warning: Could not find {DENSENET_PATH}.")
         return None
 
     try:
-        # Load Model
         tf_model = tf.keras.models.load_model(DENSENET_PATH, compile=False)
         print("✅ DenseNet Loaded Successfully.")
 
-        # Process Image (Standard TF CNN Preprocessing)
+        # DYNAMIC DECAPITATION: Create a new model that stops ONE layer early
+        # This strips off the final 4-neuron Dense layer and gives us the raw features
+        headless_tf = tf.keras.Model(inputs=tf_model.input, outputs=tf_model.layers[-2].output)
+
         img = tf.io.read_file(TEST_IMAGE)
         img = tf.image.decode_jpeg(img, channels=3)
         img = tf.image.resize(img, (224, 224))
         img = img / 255.0
         img = tf.expand_dims(img, axis=0)
 
-        # Run Inference
-        features = tf_model.predict(img, verbose=0)
+        features = headless_tf.predict(img, verbose=0)
         print(f"✅ DenseNet Inference Complete! Extracted Vector Shape: {features.shape}")
         return features
 
