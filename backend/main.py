@@ -72,6 +72,8 @@ async def analyze_scan(file: UploadFile = File(...)):
         )
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()  # 🔥 THIS PRINTS THE REAL ERROR TO THE TERMINAL
         raise HTTPException(status_code=500, detail=f"Neural Engine Failure: {str(e)}")
         
     finally:
