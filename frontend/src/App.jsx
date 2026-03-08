@@ -58,114 +58,178 @@ export default function MainDashboard() {
 	};
 
 	return (
-		<div className="dashboard-container">
-			<header className="dashboard-header">
-				<h1>Encephlo 3.0 // Neural Fusion</h1>
-				<p>1,792-Dimensional Hybrid SVM Architecture</p>
-			</header>
+		<div className="shadcn-container">
+			{/* Navbar */}
+			<nav className="shadcn-nav">
+				<div className="nav-brand">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="2"
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						className="brand-icon"
+					>
+						<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+					</svg>
+					<span className="font-semibold tracking-tight">Encephlo</span>
+					<span className="badge">Beta</span>
+				</div>
+			</nav>
 
-			<div className="dashboard-layout">
-				{/* LEFT COLUMN: Controls & Results */}
-				{/* LEFT COLUMN: Controls & Results */}
-				<div className="control-panel">
-					<div className="upload-card">
-						<h2>Input MRI Scan</h2>
-
-						<div className="upload-dropzone">
-							<input
-								type="file"
-								accept="image/*"
-								onChange={handleFileChange}
-								id="mri-upload"
-							/>
-							<label htmlFor="mri-upload">
-								{/* 1. Show ONLY the original unedited MRI here */}
-								{preview ? (
-									<img
-										src={preview}
-										alt="MRI Preview"
-										className="preview-image"
-									/>
-								) : (
-									<div className="upload-placeholder">
-										<span>Click or Drag MRI Here</span>
-									</div>
-								)}
-							</label>
+			<main className="shadcn-grid">
+				{/* LEFT COLUMN: Controls */}
+				<div className="flex-col gap-6">
+					<div className="card">
+						<div className="card-header">
+							<h3 className="card-title">Diagnostic Interface</h3>
+							<p className="card-description">
+								Upload an MRI scan to generate a hybrid SVM & ViT analysis.
+							</p>
 						</div>
 
-						<button
-							onClick={analyzeScan}
-							disabled={!file || loading}
-							className={`action-btn ${loading || !file ? "disabled" : "active"}`}
-						>
-							{loading ? "Fusing Feature Vectors..." : "Run SVM Inference"}
-						</button>
+						<div className="card-content">
+							<div className="upload-area">
+								<input
+									type="file"
+									accept="image/*"
+									onChange={handleFileChange}
+									id="mri-upload"
+									className="hidden-input"
+								/>
+								<label htmlFor="mri-upload" className="upload-label">
+									{preview ? (
+										<img src={preview} alt="MRI Scan" className="preview-img" />
+									) : (
+										<div className="upload-empty-state">
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												width="24"
+												height="24"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												strokeWidth="2"
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												className="text-muted"
+											>
+												<rect
+													width="18"
+													height="18"
+													x="3"
+													y="3"
+													rx="2"
+													ry="2"
+												/>
+												<circle cx="9" cy="9" r="2" />
+												<path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+											</svg>
+											<span className="text-sm font-medium mt-2">
+												Click to upload
+											</span>
+											<span className="text-xs text-muted">
+												JPEG, PNG or DICOM
+											</span>
+										</div>
+									)}
+								</label>
+							</div>
+
+							<button
+								onClick={analyzeScan}
+								disabled={!file || loading}
+								className={`btn-primary w-full mt-4 ${loading || !file ? "opacity-50 cursor-not-allowed" : ""}`}
+							>
+								{loading ? (
+									<span className="flex-center gap-2">
+										<svg
+											className="spinner"
+											xmlns="http://www.w3.org/2000/svg"
+											width="24"
+											height="24"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											strokeWidth="2"
+											strokeLinecap="round"
+											strokeLinejoin="round"
+										>
+											<path d="M21 12a9 9 0 1 1-6.219-8.56" />
+										</svg>
+										Processing...
+									</span>
+								) : (
+									"Run Analysis"
+								)}
+							</button>
+						</div>
 					</div>
 
-					{error && <div className="error-banner">{error}</div>}
+					{error && (
+						<div className="alert alert-destructive">
+							<span className="font-medium">Error:</span> {error}
+						</div>
+					)}
 
 					{result && (
 						<>
-							{/* Diagnostic Metrics */}
-							<div className="results-card">
-								<h3>Diagnostic Output</h3>
-
-								<div className="diagnosis-section">
-									<span className="label">Classification</span>
-									<span
-										className={`diagnosis-text ${result.diagnosis === "No Tumor" ? "safe" : "danger"}`}
-									>
-										{result.diagnosis}
-									</span>
+							{/* Results Card */}
+							<div className="card mt-6">
+								<div className="card-header">
+									<h3 className="card-title">Analysis Results</h3>
 								</div>
-
-								<div className="metrics-grid">
-									<div className="metric-box">
-										<span className="label">Confidence</span>
-										<span className="value confidence">
-											{result.confidence}%
+								<div className="card-content">
+									<div className="flex justify-between items-baseline mb-4">
+										<span className="text-sm font-medium text-muted">
+											Classification
+										</span>
+										<span
+											className={`text-2xl font-bold tracking-tight ${result.diagnosis === "No Tumor" ? "text-success" : "text-destructive"}`}
+										>
+											{result.diagnosis}
 										</span>
 									</div>
-									<div className="metric-box">
-										<span className="label">Latency</span>
-										<span className="value latency">
-											{result.inference_time_ms}ms
-										</span>
+
+									<div className="separator"></div>
+
+									<div className="grid-2-col pt-4">
+										<div>
+											<span className="text-xs text-muted block mb-1">
+												Confidence Score
+											</span>
+											<span className="text-lg font-semibold">
+												{result.confidence}%
+											</span>
+										</div>
+										<div>
+											<span className="text-xs text-muted block mb-1">
+												Inference Latency
+											</span>
+											<span className="text-lg font-semibold">
+												{result.inference_time_ms}ms
+											</span>
+										</div>
 									</div>
 								</div>
 							</div>
 
-							{/* 2. NEW: Dedicated Score-CAM Heatmap Panel */}
+							{/* Score-CAM / ViT Card */}
 							{result.heatmap_url && (
-								<div
-									className="results-card"
-									style={{
-										marginTop: "1rem",
-										border: "1px solid #3b82f6",
-										boxShadow: "0 0 15px rgba(59, 130, 246, 0.1)",
-									}}
-								>
-									<h3 style={{ color: "#60a5fa" }}>CNN Spatial Activation</h3>
-									<div style={{ textAlign: "center", marginTop: "1rem" }}>
+								<div className="card mt-6">
+									<div className="card-header pb-2">
+										<h3 className="card-title text-sm">
+											Spatial Attention Map
+										</h3>
+									</div>
+									<div className="card-content">
 										<img
 											src={result.heatmap_url}
-											alt="Score-CAM"
-											style={{
-												width: "100%",
-												borderRadius: "8px",
-												border: "1px solid #1f2937",
-											}}
+											alt="Attention Map"
+											className="rounded-md border object-cover w-full"
 										/>
-										<p
-											style={{
-												fontSize: "11px",
-												color: "#9ca3af",
-												marginTop: "8px",
-											}}
-										>
-											Thermal signature indicating DenseNet pixel attention
-										</p>
 									</div>
 								</div>
 							)}
@@ -173,23 +237,20 @@ export default function MainDashboard() {
 					)}
 				</div>
 
-				{/* RIGHT COLUMN: The 3D Holographic Brain */}
-				<div className="visualization-panel">
-					<div className="canvas-wrapper">
-						<div className="tech-overlay">
-							<p>OBJ: HUMAN_BRAIN_01</p>
-							<p>MAT: ADDITIVE_BLEND_HOLO</p>
-							<p>
-								MAP: {result ? result.diagnosis.toUpperCase() : "AWAITING_DATA"}
-							</p>
-						</div>
+				{/* RIGHT COLUMN: 3D Visualization */}
+				<div className="canvas-wrapper">
+					<BrainCanvas
+						heatmapUrl={result ? getHeatmapTexture(result.diagnosis) : null}
+					/>
 
-						<BrainCanvas
-							heatmapUrl={result ? getHeatmapTexture(result.diagnosis) : null}
-						/>
+					<div className="floating-badge">
+						<span className="flex items-center gap-1.5">
+							<span className="status-indicator"></span>
+							Live 3D Mapping
+						</span>
 					</div>
 				</div>
-			</div>
+			</main>
 		</div>
 	);
 }
