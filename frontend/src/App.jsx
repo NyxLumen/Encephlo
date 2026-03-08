@@ -66,6 +66,7 @@ export default function MainDashboard() {
 
 			<div className="dashboard-layout">
 				{/* LEFT COLUMN: Controls & Results */}
+				{/* LEFT COLUMN: Controls & Results */}
 				<div className="control-panel">
 					<div className="upload-card">
 						<h2>Input MRI Scan</h2>
@@ -78,6 +79,7 @@ export default function MainDashboard() {
 								id="mri-upload"
 							/>
 							<label htmlFor="mri-upload">
+								{/* 1. Show ONLY the original unedited MRI here */}
 								{preview ? (
 									<img
 										src={preview}
@@ -104,31 +106,70 @@ export default function MainDashboard() {
 					{error && <div className="error-banner">{error}</div>}
 
 					{result && (
-						<div className="results-card">
-							<h3>Diagnostic Output</h3>
+						<>
+							{/* Diagnostic Metrics */}
+							<div className="results-card">
+								<h3>Diagnostic Output</h3>
 
-							<div className="diagnosis-section">
-								<span className="label">Classification</span>
-								<span
-									className={`diagnosis-text ${result.diagnosis === "No Tumor" ? "safe" : "danger"}`}
-								>
-									{result.diagnosis}
-								</span>
-							</div>
-
-							<div className="metrics-grid">
-								<div className="metric-box">
-									<span className="label">Confidence</span>
-									<span className="value confidence">{result.confidence}%</span>
-								</div>
-								<div className="metric-box">
-									<span className="label">Latency</span>
-									<span className="value latency">
-										{result.inference_time_ms}ms
+								<div className="diagnosis-section">
+									<span className="label">Classification</span>
+									<span
+										className={`diagnosis-text ${result.diagnosis === "No Tumor" ? "safe" : "danger"}`}
+									>
+										{result.diagnosis}
 									</span>
 								</div>
+
+								<div className="metrics-grid">
+									<div className="metric-box">
+										<span className="label">Confidence</span>
+										<span className="value confidence">
+											{result.confidence}%
+										</span>
+									</div>
+									<div className="metric-box">
+										<span className="label">Latency</span>
+										<span className="value latency">
+											{result.inference_time_ms}ms
+										</span>
+									</div>
+								</div>
 							</div>
-						</div>
+
+							{/* 2. NEW: Dedicated Score-CAM Heatmap Panel */}
+							{result.heatmap_url && (
+								<div
+									className="results-card"
+									style={{
+										marginTop: "1rem",
+										border: "1px solid #3b82f6",
+										boxShadow: "0 0 15px rgba(59, 130, 246, 0.1)",
+									}}
+								>
+									<h3 style={{ color: "#60a5fa" }}>CNN Spatial Activation</h3>
+									<div style={{ textAlign: "center", marginTop: "1rem" }}>
+										<img
+											src={result.heatmap_url}
+											alt="Score-CAM"
+											style={{
+												width: "100%",
+												borderRadius: "8px",
+												border: "1px solid #1f2937",
+											}}
+										/>
+										<p
+											style={{
+												fontSize: "11px",
+												color: "#9ca3af",
+												marginTop: "8px",
+											}}
+										>
+											Thermal signature indicating DenseNet pixel attention
+										</p>
+									</div>
+								</div>
+							)}
+						</>
 					)}
 				</div>
 

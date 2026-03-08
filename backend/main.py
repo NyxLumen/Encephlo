@@ -52,14 +52,13 @@ async def analyze_scan(file: UploadFile = File(...)):
     file_path = os.path.join(UPLOAD_DIR, temp_filename)
     
     try:
-        # Save the file locally so TensorFlow and PyTorch can read it smoothly
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
         start_time = time.time()
         
-        # 🔥 RUN THE REAL HYBRID ENGINE
-        diagnosis, confidence = engine.predict(file_path)
+        # Catch all 3 outputs from the engine
+        diagnosis, confidence, heatmap_b64 = engine.predict(file_path)
         
         end_time = time.time()
         inference_time = round((end_time - start_time) * 1000, 2)
@@ -67,9 +66,9 @@ async def analyze_scan(file: UploadFile = File(...)):
         return DiagnosticResponse(
             status="success",
             diagnosis=diagnosis,
-            confidence=round(confidence * 100, 2), # e.g., 99.53
+            confidence=round(confidence * 100, 2), 
             inference_time_ms=inference_time,
-            heatmap_url=None
+            heatmap_url=heatmap_b64 # <-- Passing the Base64 image directly!
         )
         
     except Exception as e:
