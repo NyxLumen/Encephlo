@@ -88,7 +88,12 @@ export default function BrainCanvas({ heatmapUrl }) {
 					<BrainModel heatmapUrl={heatmapUrl} />
 				</Suspense>
 
-				<OrbitControls enableZoom={true} autoRotate={false} enablePan={false} />
+				<OrbitControls
+					enableZoom={true}
+					autoRotate={true}
+					autoRotateSpeed={1}
+					enablePan={false}
+				/>
 			</Canvas>
 		</div>
 	);
