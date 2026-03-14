@@ -1,146 +1,164 @@
 import os
-import numpy as np
-import tensorflow as tf
 import torch
-import joblib
+import torch.nn as nn
+from torchvision import models, transforms
 import cv2
+import numpy as np
 import base64
-from transformers import ViTForImageClassification, ViTImageProcessor
+import pickle
 from PIL import Image
 
-# Force CPU inference for stability
-DEVICE = torch.device("cpu") 
+# Force CPU inference for stability on the web server
+DEVICE = torch.device("cpu")
 
 class FusionEngine:
     def __init__(self, models_dir="models"):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         self.models_dir = os.path.join(base_dir, models_dir)
-        print(f"🔥 FUSION ENGINE: Initializing from {self.models_dir}...")
+        print(f"🔥 NEURAL ENGINE: Booting 3072-D PyTorch Stack from {self.models_dir}...")
         
-        # 1. Load TensorFlow Model (DenseNet)
-        dense_path = os.path.join(self.models_dir, "densenet_headless.keras")
-        if os.path.exists(dense_path):
-            tf_model = tf.keras.models.load_model(dense_path, compile=False)
-            # Decapitated 1D Extractor for SVM ONLY. We no longer use this for heatmaps.
-            self.densenet = tf.keras.Model(inputs=tf_model.input, outputs=tf_model.layers[-2].output)
-            print("   ✅ DenseNet Feature Extractor Loaded.")
-        else:
-            print(f"   ⚠️ ERROR: {dense_path} missing.")
-            self.densenet = None
+        # 1. IEEE Clinical Image Transforms
+        self.transform = transforms.Compose([
+            transforms.ToTensor(), # We handle resizing in OpenCV now
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
 
-        # 2. Load PyTorch ViT
-        self.vit_processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224-in21k")
-        # Force the config to ALWAYS track attention layers
-        self.vit_model = ViTForImageClassification.from_pretrained(
-            "google/vit-base-patch16-224-in21k", 
-            num_labels=4,
-            output_attentions=True 
-        )
-        vit_path = os.path.join(self.models_dir, "vit_feature_extractor.pt")
-        
-        if os.path.exists(vit_path):
-            self.vit_model.vit.load_state_dict(torch.load(vit_path, map_location=DEVICE))
-            self.vit_model.to(DEVICE)
-            self.vit_model.eval()
-            print("   ✅ ViT Loaded Successfully.")
-        else:
-            print(f"   ⚠️ WARNING: {vit_path} not found.")
+        # 2. Load & Decapitate DenseNet121 (1024-D)
+        try:
+            self.densenet = models.densenet121(weights=None)
+            self.densenet.classifier = nn.Sequential(nn.Dropout(0.5), nn.Linear(1024, 4))
+            self.densenet.load_state_dict(torch.load(os.path.join(self.models_dir, "densenet121_best_weights.pth"), map_location=DEVICE))
+            self.densenet.classifier = nn.Identity()
+            self.densenet = self.densenet.to(DEVICE).eval()
+            print("   ✅ DenseNet121 Loaded & Decapitated.")
+        except Exception as e:
+            print(f"   ⚠️ ERROR Loading DenseNet: {e}")
 
-        # 3. Load SVM
-        svm_path = os.path.join(self.models_dir, "svm_fusion_weights.pkl")
-        if os.path.exists(svm_path):
-            self.svm = joblib.load(svm_path)
-            print("   ✅ SVM Fusion Layer Loaded.")
-        else:
+        # 3. Load & Decapitate EfficientNet-B0 (1280-D)
+        try:
+            self.effnet = models.efficientnet_b0(weights=None)
+            self.effnet.classifier[1] = nn.Linear(1280, 4)
+            self.effnet.load_state_dict(torch.load(os.path.join(self.models_dir, "efficientnet_b0_best_weights.pth"), map_location=DEVICE))
+            self.effnet.classifier = nn.Identity()
+            self.effnet = self.effnet.to(DEVICE).eval()
+            print("   ✅ EfficientNet-B0 Loaded & Decapitated.")
+        except Exception as e:
+            print(f"   ⚠️ ERROR Loading EfficientNet: {e}")
+
+        # 4. Load & Decapitate ViT-B/16 (768-D)
+        try:
+            self.vit = models.vit_b_16(weights=None)
+            self.vit.heads.head = nn.Linear(768, 4)
+            self.vit.load_state_dict(torch.load(os.path.join(self.models_dir, "vit_b_16_best_weights.pth"), map_location=DEVICE))
+            self.vit.heads.head = nn.Identity()
+            self.vit = self.vit.to(DEVICE).eval()
+            print("   ✅ ViT-B/16 Loaded & Decapitated.")
+        except Exception as e:
+            print(f"   ⚠️ ERROR Loading ViT: {e}")
+
+        # 5. Load Master SVM Fusion Judge
+        try:
+            svm_path = os.path.join(self.models_dir, "master_svm_model.pkl")
+            with open(svm_path, 'rb') as f:
+                self.svm = pickle.load(f)
+            print("   ✅ 3072-D Master SVM Fusion Layer Loaded.")
+        except Exception as e:
+            print(f"   ⚠️ ERROR Loading SVM: {e}")
             self.svm = None
-            print("   ⚠️ WARNING: SVM weights not found.")
 
-    def preprocess_tf(self, image_path):
-        img = tf.io.read_file(image_path)
-        img = tf.image.decode_jpeg(img, channels=3)
-        img = tf.image.resize(img, (224, 224))
-        img = img / 255.0 
-        img = tf.expand_dims(img, axis=0) 
-        return img
+    def apply_clinical_preprocessing(self, image_path):
+        """
+        The OpenCV Sanitization pipeline. 
+        Strips the skull, crops the void, and applies CLAHE contrast enhancement.
+        """
+        img = cv2.imread(image_path)
+        if img is None:
+            raise ValueError(f"OpenCV could not read the image at {image_path}")
+            
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    def preprocess_torch(self, image_path):
-        image = Image.open(image_path).convert("RGB")
-        inputs = self.vit_processor(images=image, return_tensors="pt")
-        return inputs['pixel_values'].to(DEVICE)
+        # Extreme Contour Auto-Cropping (Skull/Void Stripping)
+        _, thresh = cv2.threshold(gray, 45, 255, cv2.THRESH_BINARY)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        if contours:
+            c = max(contours, key=cv2.contourArea)
+            x, y, w, h = cv2.boundingRect(c)
+            cropped_gray = gray[y:y+h, x:x+w]
+        else:
+            cropped_gray = gray
 
-    def generate_vit_attention(self, image_path, pt_input):
-        # 1. Forward pass requesting attention weights
+        # CLAHE (Contrast Limited Adaptive Histogram Equalization)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        clahe_gray = clahe.apply(cropped_gray)
+        
+        final_img = cv2.cvtColor(clahe_gray, cv2.COLOR_GRAY2BGR)
+
+        # Standardize to 224x224 for the Neural Networks
+        resized_img = cv2.resize(final_img, (224, 224), interpolation=cv2.INTER_CUBIC)
+        
+        # We also return the cleaned OpenCV image array for the Heatmap generator later
+        return resized_img
+
+    def preprocess_tensor(self, cv2_img):
+        """Converts the cleaned OpenCV image array to a PyTorch tensor."""
+        # Convert BGR (OpenCV) to RGB (PyTorch/PIL standard)
+        rgb_img = cv2.cvtColor(cv2_img, cv2.COLOR_BGR2RGB)
+        pil_img = Image.fromarray(rgb_img)
+        
+        tensor = self.transform(pil_img).unsqueeze(0)
+        return tensor.to(DEVICE)
+
+    def generate_spatial_heatmap(self, cleaned_cv2_img, tensor_input):
+        """Generates a thermal heatmap using EfficientNet's final spatial activations."""
         with torch.no_grad():
-            # Explicitly declare pixel_values
-            outputs = self.vit_model.vit(pixel_values=pt_input, output_attentions=True)
-            
-        # Safety catch just in case
-        if not outputs.attentions:
-            print("⚠️ WARNING: Transformer failed to output attention weights.")
-            return None
-            
-        # 2. Grab the attention weights from the very last Transformer block
-        attention = outputs.attentions[-1] 
-        
-        # 3. Average the attention across all Transformer heads
-        attention_heads = attention.mean(dim=1) 
-        
-        # 4. The [CLS] token is index 0. We map how much attention it paid to the 196 image patches
-        cls_attention = attention_heads[0, 0, 1:] 
-        
-        # 5. Reshape the 196 patches back into a 14x14 spatial grid
-        grid_size = int(np.sqrt(cls_attention.shape[0]))
-        attention_map = cls_attention.reshape(grid_size, grid_size).numpy()
-        
-        # 6. Normalize the map
-        attention_map = np.maximum(attention_map, 0)
-        if np.max(attention_map) != 0:
-            attention_map /= np.max(attention_map)
-            
-        # 7. Resize, colorize, and superimpose
-        original_img = cv2.imread(image_path)
-        original_img = cv2.resize(original_img, (224, 224))
-        
-        # Scale 14x14 grid up to 224x224 smoothly
-        heatmap_resized = cv2.resize(attention_map, (224, 224), interpolation=cv2.INTER_CUBIC)
+            features = self.effnet.features(tensor_input) # Shape: [1, 1280, 7, 7]
+            heatmap = torch.mean(features, dim=1).squeeze().numpy()
+            heatmap = np.maximum(heatmap, 0)
+            if np.max(heatmap) != 0:
+                heatmap /= np.max(heatmap)
+
+        # Superimpose onto the CLEANED image, not the raw uploaded image
+        heatmap_resized = cv2.resize(heatmap, (224, 224), interpolation=cv2.INTER_CUBIC)
         heatmap_uint8 = np.uint8(255 * heatmap_resized)
         
-        # COLORMAP_JET gives the classic deep blue to bright red thermal look
         heatmap_color = cv2.applyColorMap(heatmap_uint8, cv2.COLORMAP_JET)
-        superimposed_img = cv2.addWeighted(original_img, 0.5, heatmap_color, 0.5, 0)
+        superimposed_img = cv2.addWeighted(cleaned_cv2_img, 0.6, heatmap_color, 0.4, 0)
         
-        # 8. Encode to Base64
         _, buffer = cv2.imencode('.jpg', superimposed_img)
         b64_string = base64.b64encode(buffer).decode('utf-8')
-        
         return f"data:image/jpeg;base64,{b64_string}"
 
     def predict(self, image_path):
-        print(f"🧠 Processing: {image_path}")
+        print(f"\n🧠 Processing MRI Scan: {image_path}")
         
-        # 1. Feature Extraction
-        tf_input = self.preprocess_tf(image_path)
-        feat_dense = self.densenet.predict(tf_input, verbose=0) if self.densenet else np.zeros((1, 1024))
+        # 1. Clinical Sanitization (OpenCV)
+        cleaned_cv2_img = self.apply_clinical_preprocessing(image_path)
         
-        pt_input = self.preprocess_torch(image_path)
+        # 2. Tensor Conversion
+        tensor = self.preprocess_tensor(cleaned_cv2_img)
+        
+        # 3. The 3072-D Feature Extraction (The Forge)
         with torch.no_grad():
-            outputs = self.vit_model.vit(pt_input)
-            feat_vit = outputs.last_hidden_state[:, 0, :].numpy()
-
-        fusion_vector = np.concatenate([feat_dense, feat_vit], axis=1)
+            f_dense = self.densenet(tensor).numpy() # 1024-D
+            f_eff = self.effnet(tensor).numpy()     # 1280-D
+            f_vit = self.vit(tensor).numpy()        # 768-D
+            
+        # 4. Horizontal Fusion
+        fusion_vector = np.concatenate((f_dense, f_eff, f_vit), axis=1) # 3072-D Vector
         
-        # 2. Classification
+        # 5. Master SVM Classification
         if self.svm:
             prediction_idx = self.svm.predict(fusion_vector)[0]
             confidence = np.max(self.svm.predict_proba(fusion_vector))
         else:
-            prediction_idx, confidence = 0, 0.0
+            raise Exception("SVM Model not loaded. Cannot predict.")
 
         classes = ['Glioma', 'Meningioma', 'No Tumor', 'Pituitary']
-        result = classes[prediction_idx]
+        diagnosis = classes[prediction_idx]
         
-        # 3. Generate Visuals (ViT Attention Rollout)
-        b64_heatmap = self.generate_vit_attention(image_path, pt_input)
+        # 6. Generate Heatmap Evidence (Mapped against the cleaned image)
+        b64_heatmap = self.generate_spatial_heatmap(cleaned_cv2_img, tensor)
         
-        print(f"🎯 Diagnosis: {result} ({confidence*100:.2f}%)")
-        return result, confidence, b64_heatmap
+        print(f"🎯 Diagnosis Locked: {diagnosis} ({confidence*100:.2f}%)")
+        return diagnosis, confidence, b64_heatmap

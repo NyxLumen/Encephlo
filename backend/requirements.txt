@@ -1,8 +1,9 @@
 fastapi==0.110.0
 uvicorn==0.29.0
-tensorflow==2.20.0 
+python-multipart==0.0.9
+torch==2.2.1
+torchvision==0.17.1
 numpy==1.26.4
 opencv-python==4.9.0.80
 pillow==10.2.0
-scikit-learn==1.4.1.post1 # For the SVM Fusion Engine
-python-multipart==0.0.9 # Required for FastAPI file uploads
+scikit-learn==1.4.1.post1
