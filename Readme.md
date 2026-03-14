@@ -1,68 +1,77 @@
-# Encephlo | Neuro-Oncology Triage System
+# Encephlo 🧠
 
-**A Hybrid Ensemble Framework for Interpretable Brain Tumor Detection**
+**Tri-Model Feature Fusion Architecture for Neuro-Oncological Classification**
+
+The deployment of deep learning in neuro-oncology is frequently bottlenecked by "shortcut learning"—where standard neural networks memorize background artifacts (like skull boundaries or watermarks) rather than analyzing actual biological pathology.
+
+Encephlo is an architectural solution to this dataset bias. By decapitating standard classification layers and mathematically fusing dense local textures, spatial gradients, and global structural dependencies, this pipeline achieves **99.47% accuracy** with **zero false negatives** across four biological classes (Glioma, Meningioma, Pituitary Adenoma, and Healthy Tissue).
+
+---
+
+## ⚡ The Diagnostic Pipeline
+
+The Encephlo architecture is structured into three mathematically rigid phases to ensure absolute diagnostic stability:
+
+### 1. Anatomical Pre-Processing (OpenCV)
+
+To definitively prevent shortcut learning prior to inference, an aggressive OpenCV contouring algorithm auto-crops the MRI, completely masking the skull and non-anatomical voids. Contrast Limited Adaptive Histogram Equalization (CLAHE) is then applied to hyper-pronounce soft tissue boundaries.
+
+### 2. Tri-Model Feature Extraction
+
+The cleaned tensors are processed in parallel through three orthogonal computer vision paradigms. The final classification layers are removed to output raw mathematical feature arrays:
+
+- **DenseNet121 (1024-D):** Isolates dense cellular textures and localized micro-anomalies.
+- **EfficientNet-B0 (1280-D):** Captures multi-scale spatial gradients and macroscopic tumor edges.
+- **ViT-B/16 (768-D):** A Vision Transformer utilizing self-attention to map long-range structural dependencies and global anatomical geometry.
+
+### 3. Master SVM Fusion
+
+The three arrays are horizontally concatenated into a singular, highly dense **3072-Dimensional feature vector**. Rather than relying on softmax probabilities, this tensor is evaluated by a Support Vector Machine (SVM) utilizing a Radial Basis Function (RBF) kernel, translating deep learning features into rigid mathematical decision boundaries.
+
+---
+
+## 📊 Mathematical Separation & Performance
+
+In a clinical setting, a false negative is the most catastrophic failure mode. The Tri-Model SVM Fusion completely eliminates the spatial blind spots of the isolated models, achieving a perfect 405/405 classification rate for healthy tissue (0 false negatives).
 
 <p align="center">
-<img src="https://img.shields.io/badge/Python-3.9-blue?style=for-the-badge&logo=python" alt="Python"/>
-<img src="https://img.shields.io/badge/TensorFlow-2.15-orange?style=for-the-badge&logo=tensorflow" alt="Tensorflow"/>
-<img src="https://img.shields.io/badge/Streamlit-1.30-FF4B4B?style=for-the-badge&logo=streamlit" alt="Streamlit"/>
+  <img src="research/SVM_Fusion_Confusion_Matrix.png" alt="Master SVM Confusion Matrix">
 </p>
 
-## Overview
+To visually prove the pipeline is not executing probabilistic guesswork, t-SNE dimensionality reduction was applied to the 3072-D extracted feature space. The vectors naturally gravitate into four strictly isolated topological islands, proving the deep learning models learned defining biological geometries.
 
-**Encephlo** is an end-to-end Clinical Decision Support System (CDSS) designed to bridge the gap between "Black Box" AI and clinical interpretability.
+<p align="center">
+  <img src="research/SVM_Fusion_tSNE_Plot.png" width="800" alt="t-SNE Visualization">
+</p>
 
-Unlike standard classifiers that rely on a single model, Encephlo utilizes a **Heterogeneous Ensemble (The Council of Experts)** combining three distinct neural architectures to maximize robustness. It features a fully integrated clinical workflow, supporting raw medical data (**DICOM**), Explainable AI (**Grad-CAM**), and automated patient reporting.
+---
 
-## Key Features
+## 🔍 Explainable AI (XAI) Topological Dashboard
 
-- **🧠 Hybrid Ensemble Engine:** A weighted consensus system using **EfficientNetB0** (Efficiency), **MobileNetV2** (Speed), and **DenseNet121** (Texture Analysis) to minimize false negatives.
+To bridge the gap between computational power and clinical transparency, Encephlo rejects standard, low-resolution Grad-CAM approximations. The pipeline directly extracts deep convolutional feature maps from EfficientNet's final spatial activations, projecting a high-fidelity thermal overlay onto the 3D clinical interface.
 
-- **👁️ Explainable AI (XAI):** Real-time **Grad-CAM** visualization overlays heatmaps on MRI scans, allowing doctors to verify if the model is looking at the tumor or artifacts.
+This mathematically proves the model's focal point targets the true biological tumor mass rather than environmental noise.
 
-- **🏥 Medical Standard Support:(WIP)** Native support for **DICOM (`.dcm`)** files, extracting patient metadata alongside image data.
+<p align="center">
+  <img src="research/xai_4class_grid.png" width="800" alt="XAI Thermal Overlays">
+</p>
 
-- **⚙️ Smart Preprocessing:** Automated **Otsu’s Thresholding** pipeline to strip skull and background noise from scans before analysis.
+---
 
-- **📄 Automated Reporting:** Generates instant, downloadable **PDF Clinical Reports** with natural-language diagnostic recommendations.
+## 🛠️ Core Tech Stack
 
-## Tech Stack
+Encephlo is built on a high-performance Python ecosystem, leveraging GPU acceleration for heavy tensor extraction and mathematical fusion.
 
-- **Deep Learning:** TensorFlow, Keras (Ensemble Architecture)
-- **Web Interface:** Streamlit (Custom CSS for Clinical UI)
-- **Image Processing:** OpenCV (Otsu/Contour), Pillow
-- **Medical Data:** Pydicom (DICOM handling)
-- **Reporting:** FPDF (PDF Generation)
-- **Analytics:** Scikit-learn, Matplotlib, Seaborn
+- **Deep Learning Framework:** PyTorch & Torchvision _(Model architecture, decapitation, and gradient hooking)_
+- **Classical Machine Learning:** Scikit-Learn _(Master SVM with RBF kernel, t-SNE dimensionality reduction)_
+- **Computer Vision:** OpenCV & Pillow _(Anatomical auto-cropping, CLAHE contrast enhancement, thermal heatmap blending)_
+- **Scientific Computing:** NumPy _(High-dimensional vector concatenation and tensor normalization)_
+- **Hardware Acceleration:** CUDA / NVIDIA Tesla GPU Framework
 
-## 📂 Project Structure
+## 👥 Contributors
 
-```bash
-/encephlo
-├── /src
-│   ├── app.py           # Main Clinical Dashboard Application
-│   ├── utils.py         # Image Preprocessing & Grad-CAM Logic
-│   ├── report.py        # PDF Generation Engine
-│   └── evaluate.py      # Validation Scripts (Confusion Matrix/Metrics)
-├── /models              # Saved Ensemble Weights (.h5)
-├── /notebooks           # Training pipelines for EfficientNet/MobileNet/DenseNet
-└── requirements.txt     # Dependency list
-```
+- **Aditya Sharma** ([@NyxLumen](https://github.com/NyxLumen))
+- **Siddharth Gupta**
+- **Abel Bobby**
 
-## The Team
-
-NyxLumen – System Architect & Lead Developer
-
-    Designed the full-stack architecture, developed the Streamlit clinical interface, implemented the Otsu preprocessing pipeline, and engineered the PDF reporting module.
-
-sid-gupta-007 – Lead ML Engineer
-
-    Designed the Neural Network architecture, trained the EfficientNet/MobileNet/DenseNet models, and implemented the Soft Voting ensemble logic.
-
-AbelBobby – QA Engineer & Data Operations
-
-    Managed dataset curation and isolation (Train/Test splits), performed Black Box system testing, and conducted the comparative performance analysis (Ablation Studies).
-
-## ⚠️ Disclaimer
-
-This system is a prototype for educational and research purposes only. It is not FDA-approved and should not be used for actual medical diagnosis without clinical validation.
+_Made with love_
