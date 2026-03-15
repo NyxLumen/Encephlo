@@ -51,7 +51,7 @@ In a clinical setting, a false negative is the most catastrophic failure mode. T
 To visually prove the pipeline is not executing probabilistic guesswork, t-SNE dimensionality reduction was applied to the 3072-D extracted feature space. The vectors naturally gravitate into four strictly isolated topological islands, proving the deep learning models learned defining biological geometries.
 
 <p align="center">
-  <img src="research/SVM_Fusion_tSNE_Plot.png" width="800" alt="t-SNE Visualization">
+  <img src="research/SVM_Fusion_tSNE_Plot.png" alt="t-SNE Visualization">
 </p>
 
 ## 🔬 Deep Dive: Isolated Model Metrics
@@ -73,7 +73,7 @@ To mathematically justify the computational overhead of the 3072-D fusion, we be
 <br>
 
 <p align="center">
-  <img src="research/vit_b_16_training_graphs.png" width="600" alt="ViT-B/16 Training Dynamics">
+  <img src="research/vit_b_16_training_graphs.png" alt="ViT-B/16 Training Dynamics">
 </p>
 
 > **Transformer Convergence:** Training and validation curves for ViT-B/16. The erratic spikes in the early epochs represent the characteristic volatility of self-attention mechanisms actively mapping global structural geometry before stabilizing.
