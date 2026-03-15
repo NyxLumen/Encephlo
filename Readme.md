@@ -21,7 +21,7 @@ Encephlo is an architectural solution to this dataset bias. By decapitating stan
 
 The Encephlo architecture is structured into three mathematically rigid phases to ensure absolute diagnostic stability:
 
-> **1. Anatomical Pre-Processing (OpenCV)** > To definitively prevent shortcut learning prior to inference, an aggressive OpenCV contouring algorithm auto-crops the MRI, completely masking the skull and non-anatomical voids. Contrast Limited Adaptive Histogram Equalization (CLAHE) is then applied to hyper-pronounce soft tissue boundaries.
+> **1. Spatial Standardization** > Systematically strips machine-specific text watermarks and extreme background voids while preserving cranial context.
 
 > **2. Tri-Model Feature Extraction** > The cleaned tensors are processed in parallel through three orthogonal computer vision paradigms. The final classification layers are removed to output raw mathematical feature arrays.
 
