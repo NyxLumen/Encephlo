@@ -7,6 +7,7 @@
   <img src="https://img.shields.io/badge/Accuracy-99.47%25-success?style=for-the-badge" alt="Accuracy">
   <img src="https://img.shields.io/badge/False_Negatives-0-success?style=for-the-badge" alt="False Negatives">
   <img src="https://img.shields.io/badge/Architecture-PyTorch-EE4C2C?style=for-the-badge&logo=pytorch" alt="PyTorch">
+  <a href="https://doi.org/10.5281/zenodo.19674979"><img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.19674979-blue?style=for-the-badge" alt="DOI"></a>
 </p>
 
 <p align="center">
@@ -93,6 +94,11 @@ To mathematically justify the computational overhead of the 3072-D fusion, we be
 - **Classical Machine Learning:** Scikit-Learn _(Master SVM with RBF kernel, t-SNE dimensionality reduction)_
 - **Computer Vision:** OpenCV & Pillow _(Anatomical auto-cropping, CLAHE contrast enhancement, thermal heatmap blending)_
 - **Scientific Computing:** NumPy _(High-dimensional vector concatenation and tensor normalization)_
+
+### Citation
+
+If you use this code or the Encephlo architecture in your research, please cite it as:
+> Sharma, A., Tyagi, S., Gupta, S., & Bobby, A. (2026). Encephlo: A Tri-Model Feature Fusion Architecture using CNNs and Vision Transformers for Neuro-Oncological Classification. Zenodo. https://doi.org/10.5281/zenodo.19674979
 
 ## Contributors
 
